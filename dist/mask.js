@@ -23,9 +23,9 @@ angular.module('ui.mask', [])
             escChar: '\\',
             eventsToHandle: ['input', 'keyup', 'click', 'focus'],
             addDefaultPlaceholder: true,
-            allowInvalidValue: false,
-            dataIsObject : false,
-            objectIdentify : null
+            allowInvalidValue: true,
+            dataIsObject : true,
+            objectIdentify : null,
         })
         .provider('uiMask.Config', function() {
             var options = {};
@@ -54,7 +54,7 @@ angular.module('ui.mask', [])
             }
 
             this.objectIdentify = function(objectIdentify) {
-            	 return options.objectIndetify = objectIdentify;
+            	 return options.objectIdentify = objectIdentify;
             }
             this.$get = ['uiMaskConfig', function(uiMaskConfig) {
                 var tempOptions = uiMaskConfig;
@@ -80,7 +80,7 @@ angular.module('ui.mask', [])
                     restrict: 'A',
                     compile: function uiMaskCompilingFunction() {
                         var options = angular.copy(maskConfig);
-                        console.log('opts',options);
+                        //console.log('opts',options);
                         return function uiMaskLinkingFunction(scope, iElement, iAttrs, controller) {
                             var maskProcessed = false, eventsBound = false,
                                     maskCaretMap, maskPatterns, maskPlaceholder, maskComponents,
@@ -101,9 +101,9 @@ angular.module('ui.mask', [])
                             	
                                 if (maskProcessed) {
                                 	
-                                	if(typeof(value) == 'object' && options.dataIsObject && options.objectIdentify && value[options.objectIdentify] ) {
-                                		console.log('isEmptyA',value);
-                                		return originalIsEmpty(unmaskValue(value[options.objectIdentify] || ''));
+                                	if(typeof(value) == 'object' && linkOptions.dataIsObject && linkOptions.objectIdentify && value[linkOptions.objectIdentify] ) {
+                                		//console.log('isEmptyA',value);
+                                		return originalIsEmpty(unmaskValue(value[linkOptions.objectIdentify] || ''));
                                 	}
                                 	else
                                 	{
@@ -111,8 +111,8 @@ angular.module('ui.mask', [])
                                 	}
                                     
                                 } else {
-                                	if(typeof(value) == 'object' && options.dataIsObject && options.objectIdentify && value[options.objectIdentify]) {
-                                		return originalIsEmpty(value[options.objectIdentify]);
+                                	if(typeof(value) == 'object' && linkOptions.dataIsObject && linkOptions.objectIdentify && value[linkOptions.objectIdentify]) {
+                                		return originalIsEmpty(value[linkOptions.objectIdentify]);
                                 	}
                                 	else
                                 	{
@@ -162,7 +162,8 @@ angular.module('ui.mask', [])
                                 }
                             });
 
-                            iAttrs.$observe('allowInvalidValue', function(val) {                            	
+                            iAttrs.$observe('allowInvalidValue', function(val) {   
+                            	console.log('dgfgfdg',val);                         	
                                 linkOptions.allowInvalidValue = val === ''
                                     ? true
                                     : !!val;
@@ -173,7 +174,7 @@ angular.module('ui.mask', [])
                                 if (!maskProcessed) {
                                     return fromModelValue;
                                 }
-                                 if(typeof(fromModelValue) == 'object' && options.dataIsObject && options.objectIdentify && fromModelValue[options.objectIdentify] ) {
+                                 if(typeof(fromModelValue) == 'object' && linkOptions.dataIsObject && linkOptions.objectIdentify && fromModelValue[linkOptions.objectIdentify] ) {
 
                                 	return fromModelValue;
                                 }
@@ -196,10 +197,10 @@ angular.module('ui.mask', [])
                                     return fromViewValue;
                                 }
 
-                                if(typeof(fromViewValue) == 'object' && options.dataIsObject && options.objectIdentify && fromViewValue[options.objectIdentify] ) {
+                                if(typeof(fromViewValue) == 'object' && linkOptions.dataIsObject && linkOptions.objectIdentify && fromViewValue[linkOptions.objectIdentify] ) {
 
                                 	controller.$modelValue = fromViewValue;
-                                	fromViewValue = fromViewValue[options.objectIdentify];
+                                	fromViewValue = fromViewValue[linkOptions.objectIdentify];
                                 }
 
                                 value = unmaskValue(fromViewValue || '');
