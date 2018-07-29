@@ -23,7 +23,9 @@ angular.module('ui.mask', [])
             escChar: '\\',
             eventsToHandle: ['input', 'keyup', 'click', 'focus'],
             addDefaultPlaceholder: true,
-            allowInvalidValue: false
+            allowInvalidValue: false,
+            dataIsObject : false,
+            objectIdentify : null
         })
         .provider('uiMask.Config', function() {
             var options = {};
@@ -46,6 +48,14 @@ angular.module('ui.mask', [])
             this.allowInvalidValue = function(allowInvalidValue) {
                 return options.allowInvalidValue = allowInvalidValue;
             };
+
+            this.dataIsObject = function(dataIsObject) {
+            	 return options.dataIsObject = dataIsObject;
+            }
+
+            this.objectIdentify = function(objectIdentify) {
+            	 return options.objectIndetify = objectIdentify;
+            }
             this.$get = ['uiMaskConfig', function(uiMaskConfig) {
                 var tempOptions = uiMaskConfig;
                 for(var prop in options) {
@@ -70,7 +80,7 @@ angular.module('ui.mask', [])
                     restrict: 'A',
                     compile: function uiMaskCompilingFunction() {
                         var options = angular.copy(maskConfig);
-
+                        console.log('opts',options);
                         return function uiMaskLinkingFunction(scope, iElement, iAttrs, controller) {
                             var maskProcessed = false, eventsBound = false,
                                     maskCaretMap, maskPatterns, maskPlaceholder, maskComponents,
@@ -88,10 +98,26 @@ angular.module('ui.mask', [])
 
                             var originalIsEmpty = controller.$isEmpty;
                             controller.$isEmpty = function(value) {
+                            	
                                 if (maskProcessed) {
-                                    return originalIsEmpty(unmaskValue(value || ''));
+                                	
+                                	if(typeof(value) == 'object' && options.dataIsObject && options.objectIdentify && value[options.objectIdentify] ) {
+                                		console.log('isEmptyA',value);
+                                		return originalIsEmpty(unmaskValue(value[options.objectIdentify] || ''));
+                                	}
+                                	else
+                                	{
+                                		return originalIsEmpty(unmaskValue(value || ''));
+                                	}
+                                    
                                 } else {
-                                    return originalIsEmpty(value);
+                                	if(typeof(value) == 'object' && options.dataIsObject && options.objectIdentify && value[options.objectIdentify]) {
+                                		return originalIsEmpty(value[options.objectIdentify]);
+                                	}
+                                	else
+                                	{
+                                    	return originalIsEmpty(value);
+                                	}
                                 }
                             };
 
@@ -130,13 +156,13 @@ angular.module('ui.mask', [])
                             }
 
                             var modelViewValue = false;
-                            iAttrs.$observe('modelViewValue', function(val) {
+                            iAttrs.$observe('modelViewValue', function(val) {                            	
                                 if (val === 'true') {
                                     modelViewValue = true;
                                 }
                             });
 
-                            iAttrs.$observe('allowInvalidValue', function(val) {
+                            iAttrs.$observe('allowInvalidValue', function(val) {                            	
                                 linkOptions.allowInvalidValue = val === ''
                                     ? true
                                     : !!val;
@@ -147,6 +173,11 @@ angular.module('ui.mask', [])
                                 if (!maskProcessed) {
                                     return fromModelValue;
                                 }
+                                 if(typeof(fromModelValue) == 'object' && options.dataIsObject && options.objectIdentify && fromModelValue[options.objectIdentify] ) {
+
+                                	return fromModelValue;
+                                }
+
                                 value = unmaskValue(fromModelValue || '');
                                 isValid = validateValue(value);
                                 controller.$setValidity('mask', isValid);
@@ -155,14 +186,22 @@ angular.module('ui.mask', [])
                                 if (isValid || linkOptions.allowInvalidValue) {
                                     return maskValue(value);
                                 } else {
-                                    return undefined;
+                                    return fromModelValue;
                                 }
                             }
 
                             function parser(fromViewValue) {
+                            	
                                 if (!maskProcessed) {
                                     return fromViewValue;
                                 }
+
+                                if(typeof(fromViewValue) == 'object' && options.dataIsObject && options.objectIdentify && fromViewValue[options.objectIdentify] ) {
+
+                                	controller.$modelValue = fromViewValue;
+                                	fromViewValue = fromViewValue[options.objectIdentify];
+                                }
+
                                 value = unmaskValue(fromViewValue || '');
                                 isValid = validateValue(value);
                                 // We have to set viewValue manually as the reformatting of the input
@@ -171,6 +210,9 @@ angular.module('ui.mask', [])
                                 // to be out-of-sync with what the controller's $viewValue is set to.
                                 controller.$viewValue = value.length ? maskValue(value) : '';
                                 controller.$setValidity('mask', isValid);
+
+
+                                 //console.log('VNDKNFKV',controller.$modelValue,'||',controller.$viewValue);
 
                                 if (isValid || linkOptions.allowInvalidValue) {
                                     return modelViewValue ? controller.$viewValue : value;
@@ -240,6 +282,7 @@ angular.module('ui.mask', [])
                             }
 
                             function initializeElement() {
+                            	//console.log('init',controller.$modelValue)
                                 value = oldValueUnmasked = unmaskValue(controller.$modelValue || '');
                                 valueMasked = oldValue = maskValue(value);
                                 isValid = validateValue(value);
@@ -292,6 +335,7 @@ angular.module('ui.mask', [])
                             }
 
                             function unmaskValue(value) {
+                            	
                                 var valueUnmasked = '',
                                     input = iElement[0],
                                     maskPatternsCopy = maskPatterns.slice(),
@@ -300,6 +344,10 @@ angular.module('ui.mask', [])
                                     valueOffset, valueDelta, tempValue = '';
                                 // Preprocess by stripping mask components from value
                                 value = value.toString();
+                                //sanitize from default placeholder/mask component
+                                angular.forEach(maskComponents, function (component){
+					              value = value.replace(component.value, '');
+					            });
                                 valueOffset = 0;
                                 valueDelta = value.length - maskPlaceholder.length;
                                 angular.forEach(maskComponents, function(component) {
@@ -315,8 +363,9 @@ angular.module('ui.mask', [])
                                             valueOffset = position + component.value.length;
                                         }
                                     }
-                                });
+                                });                            
                                 value = tempValue + value.slice(valueOffset);
+
                                 angular.forEach(value.split(''), function(chr) {
                                     if (maskPatternsCopy.length && maskPatternsCopy[0].test(chr)) {
                                         valueUnmasked += chr;
@@ -401,7 +450,6 @@ angular.module('ui.mask', [])
 
                                 if (angular.isString(mask)) {
                                     minRequiredLength = 0;
-
                                     var isOptional = false,
                                             numberOfOptionalCharacters = 0,
                                             splitMask = mask.split('');
@@ -565,7 +613,7 @@ angular.module('ui.mask', [])
                                 if (eventWhich === 16 || eventWhich === 91) {
                                     return;
                                 }
-
+                                
                                 var val = iElement.val(),
                                         valOld = oldValue,
                                         valMasked,
