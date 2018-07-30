@@ -163,7 +163,7 @@ angular.module('ui.mask', [])
                             });
 
                             iAttrs.$observe('allowInvalidValue', function(val) {   
-                            	console.log('dgfgfdg',val);                         	
+                            	//console.log('dgfgfdg',val);                         	
                                 linkOptions.allowInvalidValue = val === ''
                                     ? true
                                     : !!val;
@@ -202,6 +202,9 @@ angular.module('ui.mask', [])
                                 	controller.$modelValue = fromViewValue;
                                 	fromViewValue = fromViewValue[linkOptions.objectIdentify];
                                 }
+				else if (linkOptions.dataIsObject) {
+				   return fromViewValue;
+				}
 
                                 value = unmaskValue(fromViewValue || '');
                                 isValid = validateValue(value);
