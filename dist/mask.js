@@ -483,7 +483,7 @@ angular.module('ui.mask', [])
                                                 minRequiredLength++;
                                             }
 
-                                            isOptional = false;
+                                            //isOptional = false;
                                         }
                                         else if (chr === '?') {
                                             isOptional = true;
