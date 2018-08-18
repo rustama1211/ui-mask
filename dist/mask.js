@@ -203,6 +203,10 @@ angular.module('ui.mask', [])
                                 	fromViewValue = fromViewValue[linkOptions.objectIdentify];
                                 }
 				else if (linkOptions.dataIsObject) {
+				   value = unmaskValue(fromViewValue || '');
+				   isValid = validateValue(value);
+				   controller.$viewValue = value.length ? maskValue(value) : '';
+                                   controller.$setValidity('mask', isValid);
 				   return fromViewValue;
 				}
 
